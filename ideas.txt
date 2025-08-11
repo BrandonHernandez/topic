@@ -1,0 +1,23 @@
+examples:
+
+[presses CTRL + SHIFT + N]
+[types:]
+
+	i need to fix bcs in manual tunnel soon.[enter -> finishes description and starts topic]
+	op30[enter -> saves the note and closes console]
+
+[presses CTRL + SHIFT + N]
+[types:]
+
+	let's try this again but now with a yellow box.[enter -> finishes description and starts topic]
+	o'p30[enter -> saves the note and closes console]
+
+
+how do you handle typos?
+
+group by likelihood?
+
+first topic ever needs to be written 100% correctly. everything after will use it as reference.
+
+
+
