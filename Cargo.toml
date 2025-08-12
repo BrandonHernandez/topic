@@ -4,3 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+eframe = "0.29"
+rusqlite = { version = "0.31", features = ["bundled"] }
+directories = "5"
