@@ -23,6 +23,19 @@ first topic ever needs to be written 100% correctly. everything after will use i
 
 8/12/2025
 Status updates need to be toasty notifications
+---windows toast notifications are hard to do...
 
 
+
+8/13/2025
+Allow multiple topics. comma separated?
+
+Saves locally (sqlite) by default. Add ability to store in online db.
+
+How to display notes collection?
+	Hotkey to bring a text input and type topic?
+	
+Should not allow to close the app with Enter if topic is missing...
+	Or both content and topic?
+	Allow exit only with Esc?
 

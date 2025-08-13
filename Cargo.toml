@@ -8,3 +8,6 @@ eframe = "0.29"
 rusqlite = { version = "0.31", features = ["bundled"] }
 directories = "5"
 egui-toast = "0.15"
+crossbeam-channel = "0.5"
+windows-hotkeys = "0.2.1"
+anyhow = "1.0"
