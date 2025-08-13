@@ -3,6 +3,9 @@ use directories::ProjectDirs;
 use rusqlite::{params, Connection};
 use std::fs;
 
+// Toasts
+use egui_toast::{Toast, Toasts, ToastKind, ToastOptions};
+
 // This method creates the data.sqlite file in C:\Users\bhernandez\AppData\Roaming\ExampleOrg...
 // Why don't we just put it next to the executable? Let's do that... 
 
@@ -23,7 +26,6 @@ fn open_db() -> rusqlite::Result<Connection> {
         r#"
         CREATE TABLE IF NOT EXISTS notes (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            text        TEXT NOT NULL,
             topic       TEXT NOT NULL,
             content     TEXT NOT NULL,
             created_at  TEXT NOT NULL DEFAULT (datetime('now'))
@@ -59,42 +61,69 @@ struct MyApp {
     text: String,
     first_frame: bool,
     conn: Connection,
-    status: String,
     topic: String,
     content: String,
     delimiter: usize,
+    toasts: Toasts,
 }
 
 impl MyApp {
     fn new() -> rusqlite::Result<Self> {
+
+        let toasts = Toasts::new()
+            .anchor(egui::Align2::RIGHT_BOTTOM, (-12.0, -12.0))
+            .direction(egui::Direction::BottomUp);
+
         Ok(Self {
             text: String::new(),
             first_frame: false,
             conn: open_db()?,
-            status: String::new(),
             topic: String::new(),
             content: String::new(),
             delimiter: 0,
+            toasts,
         })
     }
     fn save_current(&mut self) {
-        // save topic and content, not text
-        // PENDING ^^
-        if self.text.trim().is_empty() {
-            self.status = String::from("Nothing to save.");
+        
+        let topic_trimmed = self.topic.trim();
+        let content_trimmed = self.content.trim();
+
+        if topic_trimmed.is_empty() || content_trimmed.is_empty() {
+            // Display status on a toast!
+            self.toasts.add(Toast {
+                text: "Nothing to save".into(),
+                kind: ToastKind::Warning,
+                options: ToastOptions::default().duration_in_seconds(2.0),
+                ..Default::default()
+            });
+
             return;
         }
-        let trimmed = self.text.trim();
-        match self.conn.execute("INSERT INTO notes (text) VALUES (?1)", params![trimmed]) {
+
+
+        match self.conn.execute("INSERT INTO notes (topic, content) VALUES (?1, ?2)", params![topic_trimmed, content_trimmed]) {
             Ok(_) => {
-                self.status = String::from("Saved");
-                // self.text.clear();
+                self.toasts.add(Toast {
+                    text: "Saved".into(),
+                    kind: ToastKind::Success,
+                    options: ToastOptions::default().duration_in_seconds(2.0),
+                    ..Default::default()
+                });
+
             },
             Err(e) => {
-                self.status = format!("Error: {e}");
+                self.toasts.add(Toast {
+                    text: format!("Error: {e}").into(),
+                    kind: ToastKind::Error,
+                    options: ToastOptions::default().duration_in_seconds(4.0),
+                    ..Default::default()
+                });    
+
             },
         }
     }
+
     fn delimiter(&mut self){
         let text_bytes = self.text.as_bytes();
         
@@ -108,15 +137,25 @@ impl MyApp {
         self.delimiter = 0;
     }
 
-    fn topic(&mut self) -> &str {
-        &self.text[self.delimiter + 1..]
+    fn set_topic(&mut self) {
+        self.topic = String::from(&self.text[(self.delimiter + 1)..]);
     }
     
-    fn content(&mut self) -> &str {
-        &self.text[..self.delimiter]
+    fn set_content(&mut self) {
+        self.content = String::from(&self.text[..self.delimiter]);
     }
-}
 
+    fn get_topic(&mut self) -> &str {
+        &self.topic
+    }
+    
+    fn get_content(&mut self) -> &str {
+        &self.content
+    }
+
+
+
+}
 
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
@@ -134,8 +173,7 @@ impl eframe::App for MyApp {
         }
         
         egui::CentralPanel::default().show(ctx, |ui| {
-            // ui.heading("Hello from egui!");
-            // ui.label("Type something:");
+            ui.heading("Create a note");
 
             // Create a persistent ID for the text field
             let id = ui.make_persistent_id("input");
@@ -151,26 +189,23 @@ impl eframe::App for MyApp {
 
             // ui.text_edit_singleline(&mut self.text);
             
+            // Search for the delimiter character in input
             self.delimiter();
 
             if !self.text.is_empty() && self.delimiter > 0 {
-                ui.label(format!("Topic: {}", self.topic().trim()));
-                ui.label(format!("Content: {}", self.content().trim()));
+                self.set_topic();
+                self.set_content();
+                ui.label(format!("Topic: {}", self.get_topic().trim()));
+                ui.label(format!("Content: {}", self.get_content().trim()));
             }
 
             // if !self.text.is_empty() {
             //     ui.label(format!("{}", self.text));
             // }
 
-            // The status is never seen. Only gets contents when hitting save, but that closes the app, so...
-            // if !self.status.is_empty() {
-            //     ui.label(format!("{}", self.status));
-            // }
-
-            // if ui.button("Click me").clicked() {
-            //     self.counter += 1;
-            // }
-            // ui.label(format!("Counter: {}", self.counter));
+            // Draw toasts each frame (must be last so they overlay UI nicely)
+            self.toasts.show(ctx);
+            
         });
     }
 }
