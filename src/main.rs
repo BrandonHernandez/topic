@@ -131,7 +131,7 @@ impl TopicApp {
         match self.conn.execute("INSERT INTO notes (topic, content) VALUES (?1, ?2)", params![topic, content]) {
             Ok(_) => {
                 self.toasts.add(Toast {
-                    text: "Saving...".into(),
+                    text: "Saved".into(),
                     kind: ToastKind::Success,
                     options: ToastOptions::default().duration_in_seconds(0.75),
                     ..Default::default()
@@ -141,9 +141,9 @@ impl TopicApp {
                 // If saved, clear the raw text in self
                 self.clear_raw_text();
 
-                // These are to avoid saving an empty note after having saved a good note.
-                self.clear_topic();
-                self.clear_content();
+                // // These are to avoid saving an empty note after having saved a good note.
+                // self.clear_topic();
+                // self.clear_content();
 
                 // Set first_frame to false so focus can be brought back into the text input.
                 self.first_frame = false;
@@ -174,7 +174,7 @@ impl TopicApp {
         self.cmd_mode = false;
 
         for i in 0..text_bytes.len() {
-            // Anytime `:` is the first char we are in cmd mode.
+            // We are in cmd mode anytime `:` is the first char.
             if text_bytes[0] == b':' {
                 self.cmd_mode = true;
                 return;
@@ -260,7 +260,7 @@ impl eframe::App for TopicApp {
             // ctx.send_viewport_cmd(egui::viewport::ViewportCommand::Minimized(true));
             return;
         }
-        if ctx.input(|i| i.key_pressed(egui::Key::Enter)) {
+        if ctx.input(|i| i.key_pressed(egui::Key::Enter)) && !self.cmd_mode {
             self.save_current(); 
             return;
         }
@@ -288,6 +288,10 @@ impl eframe::App for TopicApp {
             // ~~~Space~~~
             ui.label("");
             
+            // Always clear topic and content to avoid leftover data
+            self.clear_topic();
+            self.clear_content();
+
             // Search for the separator in text input
             self.search_separator();
 
@@ -307,17 +311,28 @@ impl eframe::App for TopicApp {
                 ui.label(egui::RichText::new("cmd mode").color(egui::Color32::RED));
                 // The following abomination turns text cmd into enum cmd. Sets self.cmd internally.
                 self.get_set_cmd();
-                match self.cmd {
-                    CMD::Show => {
-                        // tbd
-                    },
-                    CMD::Exit => {
-                        ctx.send_viewport_cmd(egui::viewport::ViewportCommand::Close);
-                    },
-                    CMD::None => {
-                        // do nothing
-                    },
+                
+                if ctx.input(|i| i.key_pressed(egui::Key::Enter)) {
+                    match self.cmd {
+                        CMD::Show => {
+                            // tbd
+                        },
+                        CMD::Exit => {
+                            ctx.send_viewport_cmd(egui::viewport::ViewportCommand::Close);
+                        },
+                        CMD::None => {
+                            self.toasts.add(Toast {
+                                text: format!("Not a cmd").into(),
+                                kind: ToastKind::Error,
+                                options: ToastOptions::default().duration_in_seconds(0.750),
+                                ..Default::default()
+                            });    
+                            // Bring focus back to text input if bad command is entered (focus is lost when pressing enter)
+                            self.first_frame = false;
+                        },
+                    }
                 }
+                
             }
 
             // Draw toasts each frame (must be last so they overlay UI nicely)
