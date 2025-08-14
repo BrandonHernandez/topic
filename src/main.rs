@@ -315,7 +315,9 @@ impl eframe::App for TopicApp {
                 if ctx.input(|i| i.key_pressed(egui::Key::Enter)) {
                     match self.cmd {
                         CMD::Show => {
-                            // tbd
+                            // This needs to be worked on...
+                            // let results = self.conn.prepare("SELECT * FROM notes");
+                            // println!("{:#?}", results);
                         },
                         CMD::Exit => {
                             ctx.send_viewport_cmd(egui::viewport::ViewportCommand::Close);
