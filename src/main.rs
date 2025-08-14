@@ -181,6 +181,10 @@ impl TopicApp {
                 // If saved, clear the raw text in self
                 self.clear_raw_text();
 
+                // These are to avoid saving an empty note after having saved a good note.
+                self.clear_topic();
+                self.clear_content();
+
                 // Set first_frame to false so focus can be brought back into the text input.
                 self.first_frame = false;
 
@@ -257,6 +261,16 @@ impl TopicApp {
     fn clear_raw_text(&mut self) {
         self.raw_text = String::new();
     }
+
+    fn clear_topic(&mut self) {
+        self.topic = String::new();
+    }
+    
+    fn clear_content(&mut self) {
+        self.content = String::new();
+    }
+
+
 
 
 }
