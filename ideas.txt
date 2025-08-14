@@ -39,3 +39,23 @@ Should not allow to close the app with Enter if topic is missing...
 	Or both content and topic?
 	Allow exit only with Esc?
 
+
+
+8/14/2025
+
+add cmd mode
+
+restrict to 4 letter commands?
+
+:exit
+:show
+:delete
+:topics
+:etc
+
+the app has the potential to be something else... it could also be a generic text input that will send the text to whatever app you choose.
+EXample:
+
+this is a note that I have to send to Jeff:::sendto ms-teams
+
+^^this would send the note to a chat in Teams.
