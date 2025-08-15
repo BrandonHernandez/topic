@@ -81,7 +81,7 @@ struct Note {
 }
 
 enum CMD {
-    Show,
+    Show(String),       //Show(params)
     Exit,
     None,
 }
@@ -232,18 +232,24 @@ impl TopicApp {
     }
 
     fn get_set_cmd(&mut self) {
+        // Need to get cmd params...
         // Avoid invalid index
         if self.raw_text.len() > 4 {
             let cmd = &self.raw_text[1..5]; //Get 4 chars after ":" at [0]
             let cmd = cmd.to_lowercase();
             let cmd = cmd.as_str();
+
+            // raw_text[5] is whitespace
+            let params = &self.raw_text[5..].trim();
+            let params = params.to_lowercase();
+
             match cmd {
                 "exit" => {
                     self.cmd = CMD::Exit;
                     return;
                 },
                 "show" => {
-                    self.cmd = CMD::Show;
+                    self.cmd = CMD::Show(params);
                     return;
                 },
                 _ => (),
@@ -253,10 +259,11 @@ impl TopicApp {
         self.cmd = CMD::None;
     }
 
-    fn retrieve_records(&mut self) -> Result<()> {
-        let mut stmt = self.conn.prepare("SELECT * FROM notes")?;
+    fn get_notes(&mut self, topic: String) -> Result<Vec::<Note>> {
+        let mut stmt = self.conn.prepare("SELECT * FROM (notes) WHERE topic = ?1")?;
+        // let mut stmt = self.conn.prepare("SELECT * FROM notes")?;
 
-        let note_iter = stmt.query_map([], |row| {
+        let note_iter = stmt.query_map([topic], |row| {
             Ok(Note {
                 id: row.get(0)?,
                 topic: row.get(1)?,
@@ -265,11 +272,14 @@ impl TopicApp {
             })
         })?;
 
+        let mut notes = Vec::<Note>::new();
+
         for note in note_iter {
-            println!("{:?}", note?);
+            // println!("{:?}", note?);
+            notes.push(note?);
         }
 
-        Ok(())
+        Ok(notes)
     }
 
 
@@ -340,9 +350,21 @@ impl eframe::App for TopicApp {
                 self.get_set_cmd();
                 
                 if ctx.input(|i| i.key_pressed(egui::Key::Enter)) {
-                    match self.cmd {
-                        CMD::Show => {
-                            let _ = self.retrieve_records();
+                    match &self.cmd {
+                        CMD::Show(topic) => {
+                            match self.get_notes(String::from(topic)) {
+                                Ok(notes) => {
+                                    for note in notes {
+                                        println!("===============================================================");
+                                        println!("id: {}", note.id);
+                                        println!("topic: {}", note.topic);
+                                        println!("content: {}", note.content);
+                                        println!("created_at: {}", note.created_at);
+                                        println!("===============================================================");
+                                    }
+                                },
+                                Err(_e) => (),
+                            }
                         },
                         CMD::Exit => {
                             ctx.send_viewport_cmd(egui::viewport::ViewportCommand::Close);
