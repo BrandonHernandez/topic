@@ -1,6 +1,6 @@
 use eframe::{egui, NativeOptions, egui::ViewportBuilder};
 // use directories::ProjectDirs;
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, Result};
 // use std::fs;
 
 use std::time::{Instant};
@@ -70,6 +70,14 @@ struct TopicApp {
     close_after: Option<Instant>,
     cmd_mode: bool,
     cmd: CMD,
+}
+
+#[derive(Debug)]
+struct Note {
+    id: i32,
+    topic: String,
+    content: String,
+    created_at: String,
 }
 
 enum CMD {
@@ -245,6 +253,25 @@ impl TopicApp {
         self.cmd = CMD::None;
     }
 
+    fn retrieve_records(&mut self) -> Result<()> {
+        let mut stmt = self.conn.prepare("SELECT * FROM notes")?;
+
+        let note_iter = stmt.query_map([], |row| {
+            Ok(Note {
+                id: row.get(0)?,
+                topic: row.get(1)?,
+                content: row.get(2)?,
+                created_at: row.get(3)?,
+            })
+        })?;
+
+        for note in note_iter {
+            println!("{:?}", note?);
+        }
+
+        Ok(())
+    }
+
 
 
 
@@ -315,9 +342,7 @@ impl eframe::App for TopicApp {
                 if ctx.input(|i| i.key_pressed(egui::Key::Enter)) {
                     match self.cmd {
                         CMD::Show => {
-                            // This needs to be worked on...
-                            // let results = self.conn.prepare("SELECT * FROM notes");
-                            // println!("{:#?}", results);
+                            let _ = self.retrieve_records();
                         },
                         CMD::Exit => {
                             ctx.send_viewport_cmd(egui::viewport::ViewportCommand::Close);
