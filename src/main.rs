@@ -82,6 +82,7 @@ struct Note {
 
 enum CMD {
     Show(String),       //Show(params)
+    Topics,
     Exit,
     None,
 }
@@ -239,19 +240,22 @@ impl TopicApp {
             let cmd = cmd.to_lowercase();
             let cmd = cmd.as_str();
 
-            // raw_text[5] is whitespace
-            let params = &self.raw_text[5..].trim();
-            let params = params.to_lowercase();
-
             match cmd {
                 "exit" => {
                     self.cmd = CMD::Exit;
                     return;
                 },
                 "show" => {
-                    self.cmd = CMD::Show(params);
+                    // raw_text[5] is whitespace
+                    let topic = &self.raw_text[5..].trim();
+                    let topic = topic.to_lowercase();
+                    self.cmd = CMD::Show(topic);
                     return;
                 },
+                "tpcs" => {
+                    self.cmd = CMD::Topics;
+                    return;
+                }
                 _ => (),
             }
         }
@@ -280,6 +284,25 @@ impl TopicApp {
         }
 
         Ok(notes)
+    }
+
+
+    // this function is not working properly. Fix it later.
+    fn get_topics(&mut self) -> Result<Vec::<String>> {
+        let mut stmt = self.conn.prepare("SELECT topic FROM notes")?;
+
+        let topics_iter = stmt.query_map([], |row| {
+            // get(1) is topic column
+            Ok(row.get(1)?)
+        })?;
+
+        let mut topics = Vec::<String>::new();
+
+        for topic in topics_iter {
+            topics.push(topic?);
+        }
+
+        Ok(topics)
     }
 
 
@@ -369,6 +392,22 @@ impl eframe::App for TopicApp {
                         CMD::Exit => {
                             ctx.send_viewport_cmd(egui::viewport::ViewportCommand::Close);
                         },
+                        CMD::Topics => {
+                            match self.get_topics() {
+                                Ok(topics) => {
+                                    println!("Yes");
+                                    for topic in topics {
+                                        println!("===============================================================");
+                                        println!("{}", topic);
+                                        println!("===============================================================");
+                                    }
+                                },
+                                Err(_e) => {
+                                    println!("oh no");
+                                },
+                            }
+
+                        }
                         CMD::None => {
                             self.toasts.add(Toast {
                                 text: format!("Not a cmd").into(),
